@@ -5,20 +5,19 @@ public class Node
     public int Value { get; }
     public Node Left { get; set; }
     public Node Right { get; set; }
+    public int Height { get; set; }
 
     public Node(int value)
     {
         Value = value;
+        Height = 1;
     }
 }
 
-public class BinaryTree
+public class AVLTree
 {
     public Node Root { get; private set; }
 
-    /// <summary>
-    /// Inserts a value into the binary tree.
-    /// </summary>
     public void Insert(int value)
     {
         Root = InsertRecursive(Root, value);
@@ -31,26 +30,95 @@ public class BinaryTree
 
         if (value < node.Value)
             node.Left = InsertRecursive(node.Left, value);
-        else
+        else if (value > node.Value)
             node.Right = InsertRecursive(node.Right, value);
+        else
+            return node; // Duplicate values not allowed
+
+        UpdateHeight(node);
+        return Balance(node);
+    }
+
+    public bool Search(int value)
+    {
+        return SearchRecursive(Root, value);
+    }
+
+    private bool SearchRecursive(Node node, int value)
+    {
+        if (node == null) return false;
+        if (value == node.Value) return true;
+        return value < node.Value
+            ? SearchRecursive(node.Left, value)
+            : SearchRecursive(node.Right, value);
+    }
+
+    private void UpdateHeight(Node node)
+    {
+        node.Height = 1 + Math.Max(GetHeight(node.Left), GetHeight(node.Right));
+    }
+
+    private int GetHeight(Node node) => node?.Height ?? 0;
+
+    private int GetBalanceFactor(Node node)
+    {
+        return node == null ? 0 : GetHeight(node.Left) - GetHeight(node.Right);
+    }
+
+    private Node Balance(Node node)
+    {
+        int balance = GetBalanceFactor(node);
+
+        if (balance > 1)
+        {
+            if (GetBalanceFactor(node.Left) < 0)
+                node.Left = RotateLeft(node.Left);
+            return RotateRight(node);
+        }
+
+        if (balance < -1)
+        {
+            if (GetBalanceFactor(node.Right) > 0)
+                node.Right = RotateRight(node.Right);
+            return RotateLeft(node);
+        }
 
         return node;
     }
 
-    /// <summary>
-    /// Prints the tree in in-order traversal.
-    /// </summary>
-    public void PrintInOrder()
+    private Node RotateLeft(Node x)
     {
-        PrintInOrder(Root);
-        Console.WriteLine(); // For a clean newline after printing
+        Node y = x.Right;
+        x.Right = y.Left;
+        y.Left = x;
+
+        UpdateHeight(x);
+        UpdateHeight(y);
+        return y;
     }
 
-    private void PrintInOrder(Node node)
+    private Node RotateRight(Node y)
+    {
+        Node x = y.Left;
+        y.Left = x.Right;
+        x.Right = y;
+
+        UpdateHeight(y);
+        UpdateHeight(x);
+        return x;
+    }
+
+    public void PrintInOrder()
+    {
+        PrintInOrderRecursive(Root);
+        Console.WriteLine();
+    }
+
+    private void PrintInOrderRecursive(Node node)
     {
         if (node == null) return;
-        PrintInOrder(node.Left);
+        PrintInOrderRecursive(node.Left);
         Console.Write($"{node.Value} ");
-        PrintInOrder(node.Right);
+        PrintInOrderRecursive(node.Right);
     }
 }
