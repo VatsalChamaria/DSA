@@ -1,0 +1,72 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+
+public class Sorting
+{
+    public static void QuickSort(int[] arr, int left, int right)
+    {
+        if (left >= right) return;
+
+        int pivot = arr[(left + right) / 2];
+        int index = Partition(arr, left, right, pivot);
+        QuickSort(arr, left, index - 1);
+        QuickSort(arr, index, right);
+    }
+
+    private static int Partition(int[] arr, int left, int right, int pivot)
+    {
+        while (left <= right)
+        {
+            while (arr[left] < pivot) left++;
+            while (arr[right] > pivot) right--;
+
+            if (left <= right)
+            {
+                (arr[left], arr[right]) = (arr[right], arr[left]);
+                left++; right--;
+            }
+        }
+        return left;
+    }
+
+    public static void ParallelSort(int[] arr)
+    {
+        // Break into chunks and sort in parallel
+        int[][] chunks = arr
+            .Select((value, index) => new { value, index })
+            .GroupBy(x => x.index / (arr.Length / Environment.ProcessorCount + 1))
+            .Select(group => group.Select(x => x.value).ToArray())
+            .ToArray();
+
+        Parallel.ForEach(chunks, chunk => Array.Sort(chunk));
+
+        int[] sorted = chunks.SelectMany(x => x).OrderBy(x => x).ToArray();
+        Array.Copy(sorted, arr, arr.Length);
+    }
+
+    public static void PrintArray(int[] arr)
+    {
+        foreach (var item in arr)
+            Console.Write(item + " ");
+        Console.WriteLine();
+    }
+
+    public static void Main()
+    {
+        int[] dataset = { 50, 20, 40, 10, 30, 90, 70, 60, 100, 80 };
+
+        Console.WriteLine("Before Quick Sort:");
+        PrintArray(dataset);
+
+        QuickSort(dataset, 0, dataset.Length - 1);
+
+        Console.WriteLine("After Quick Sort:");
+        PrintArray(dataset);
+
+        Console.WriteLine("Parallel Sort Demo:");
+        int[] largeDataset = Enumerable.Range(1, 10000).OrderByDescending(x => x).ToArray();
+        ParallelSort(largeDataset);
+        Console.WriteLine($"First 10 sorted values: {string.Join(", ", largeDataset.Take(10))}");
+    }
+}
