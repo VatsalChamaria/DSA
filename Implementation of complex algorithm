@@ -1,0 +1,102 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+
+public class ApiRequest : IComparable<ApiRequest>
+{
+    public string Endpoint { get; }
+    public int Priority { get; }
+
+    public ApiRequest(string endpoint, int priority)
+    {
+        Endpoint = endpoint;
+        Priority = priority;
+    }
+
+    // Lower priority value means higher importance
+    public int CompareTo(ApiRequest other) => Priority.CompareTo(other.Priority);
+}
+
+public class ApiRequestQueue
+{
+    private readonly List<ApiRequest> heap = new();
+    private readonly object locker = new();
+
+    public void Enqueue(ApiRequest request)
+    {
+        lock (locker)
+        {
+            heap.Add(request);
+            HeapifyUp(heap.Count - 1);
+        }
+    }
+
+    public void EnqueueBatch(IEnumerable<ApiRequest> requests)
+    {
+        lock (locker)
+        {
+            foreach (var request in requests)
+            {
+                heap.Add(request);
+                HeapifyUp(heap.Count - 1);
+            }
+        }
+    }
+
+    public ApiRequest Dequeue()
+    {
+        lock (locker)
+        {
+            if (heap.Count == 0) return null;
+
+            var top = heap[0];
+            heap[0] = heap[^1];
+            heap.RemoveAt(heap.Count - 1);
+            HeapifyDown(0);
+            return top;
+        }
+    }
+
+    private void HeapifyUp(int index)
+    {
+        while (index > 0)
+        {
+            int parent = (index - 1) / 2;
+            if (heap[index].CompareTo(heap[parent]) < 0)
+            {
+                Swap(index, parent);
+                index = parent;
+            }
+            else break;
+        }
+    }
+
+    private void HeapifyDown(int index)
+    {
+        int count = heap.Count;
+        while (true)
+        {
+            int smallest = index;
+            int left = 2 * index + 1;
+            int right = 2 * index + 2;
+
+            if (left < count && heap[left].CompareTo(heap[smallest]) < 0)
+                smallest = left;
+
+            if (right < count && heap[right].CompareTo(heap[smallest]) < 0)
+                smallest = right;
+
+            if (smallest == index) break;
+            Swap(index, smallest);
+            index = smallest;
+        }
+    }
+
+    private void Swap(int i, int j)
+    {
+        (heap[i], heap[j]) = (heap[j], heap[i]);
+    }
+
+    public int Count => heap.Count;
+}
+
