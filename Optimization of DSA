@@ -1,0 +1,91 @@
+using System;
+using System.Collections.Generic;
+
+public class TaskExecutor
+{
+    private readonly Queue<string> taskQueue = new();
+
+    public void AddTask(string task)
+    {
+        if (string.IsNullOrWhiteSpace(task))
+        {
+            LogWarning("Attempted to add a null or empty task. Skipping...");
+            return;
+        }
+        taskQueue.Enqueue(task);
+    }
+
+    public void ProcessTasks()
+    {
+        while (taskQueue.Count > 0)
+        {
+            string task = taskQueue.Dequeue();
+            Console.WriteLine($"Processing task: {task}");
+
+            try
+            {
+                ExecuteWithRetry(task, retries: 2);
+            }
+            catch (Exception ex)
+            {
+                LogError($"Task '{task}' failed after retries: {ex.Message}");
+            }
+        }
+    }
+
+    private void ExecuteWithRetry(string task, int retries)
+    {
+        int attempts = 0;
+        while (attempts <= retries)
+        {
+            try
+            {
+                ExecuteTask(task);
+                return;
+            }
+            catch (Exception ex)
+            {
+                attempts++;
+                LogWarning($"Attempt {attempts} failed for task '{task}': {ex.Message}");
+                if (attempts > retries) throw;
+            }
+        }
+    }
+
+    private void ExecuteTask(string task)
+    {
+        if (task.Contains("Fail"))
+            throw new InvalidOperationException("Task execution failed due to invalid content.");
+
+        Console.WriteLine($"✅ Task '{task}' completed successfully.");
+    }
+
+    private void LogError(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"[ERROR] {message}");
+        Console.ResetColor();
+    }
+
+    private void LogWarning(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine($"[WARNING] {message}");
+        Console.ResetColor();
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        TaskExecutor executor = new TaskExecutor();
+
+        executor.AddTask("Task 1");
+        executor.AddTask(null);            // Skipped with warning
+        executor.AddTask("Fail Task");     // Will retry then log error
+        executor.AddTask("Task 2");
+
+        executor.ProcessTasks();
+    }
+}
