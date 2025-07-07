@@ -1,0 +1,56 @@
+using System;
+
+public class Node
+{
+    public int Value { get; }
+    public Node Left { get; set; }
+    public Node Right { get; set; }
+
+    public Node(int value)
+    {
+        Value = value;
+    }
+}
+
+public class BinaryTree
+{
+    public Node Root { get; private set; }
+
+    /// <summary>
+    /// Inserts a value into the binary tree.
+    /// </summary>
+    public void Insert(int value)
+    {
+        Root = InsertRecursive(Root, value);
+    }
+
+    private Node InsertRecursive(Node node, int value)
+    {
+        if (node == null)
+            return new Node(value);
+
+        if (value < node.Value)
+            node.Left = InsertRecursive(node.Left, value);
+        else
+            node.Right = InsertRecursive(node.Right, value);
+
+        return node;
+    }
+
+    /// <summary>
+    /// Prints the tree in in-order traversal.
+    /// </summary>
+    public void PrintInOrder()
+    {
+        PrintInOrder(Root);
+        Console.WriteLine(); // For a clean newline after printing
+    }
+
+    private void PrintInOrder(Node node)
+    {
+        if (node == null) return;
+        PrintInOrder(node.Left);
+        Console.Write($"{node.Value} ");
+        PrintInOrder(node.Right);
+    }
+}
